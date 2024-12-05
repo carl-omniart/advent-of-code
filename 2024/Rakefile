@@ -1,0 +1,117 @@
+module AOC
+  ROOT = Dir.getwd
+
+  def self.year
+    File.basename(ROOT).to_i
+  end    
+   
+
+  DIRS = {
+    data: "#{ROOT}/data",
+    lib: "#{ROOT}/lib",
+    spec: "#{ROOT}/spec"
+  }
+
+  def self.to_file day, subdir
+    file = "day_%02d.rb" % day
+    dir  = DIRS[subdir]
+    "#{dir}/#{file}"
+  end
+
+  def self.to_day file
+    File.basename(file).gsub('day_', '').to_i
+  end
+
+  def self.mod_name day
+    ("Day%02d" % day).to_sym
+  end
+
+  def self.mod day
+    mod = Object.const_get mod_name(day)
+    yield mod if block_given?
+    mod
+  end
+
+  def self.files subdir
+    dir = DIRS[subdir]
+    Dir.each_child(dir).select { |child| File.file? child }
+  end    
+  
+  def self.days
+    files(:lib).map { |file| to_day file }.sort
+  end  
+
+  def self.last_day
+    days.max || 0
+  end  
+
+  def self.next_day
+    last_day + 1
+  end
+
+  def self.lib_temp day
+    File.read("#{ROOT}/temp/lib.rb").gsub('ModuleName', module_name(day))
+  end
+
+  def self.spec_temp day
+  end
+end
+
+def test day
+  spec_file = AOC.to_file day, :spec
+  require spec_file
+end
+
+def solve day
+  main_file = AOC.to_file day, :lib
+  data_file = AOC.to_file day, :data
+
+  require main_file
+  input = File.read data_file
+
+  AOC.mod(day) do |mod|
+    puts "Day #{mod.day}: #{mod.title}"
+    puts "  1. #{mod.solve_part_one(input)}"
+    puts "  2. #{mod.solve_part_two(input)}"
+  end
+end
+
+task :new do |task|
+  day       = AOC.next_day
+  lib_path  = AOC.to_file day, :lib
+  spec_path = AOC.to_file day, :spec
+
+  File.open( lib_path, 'w') { |file| file.write AOC.lib_temp(day) }
+  File.open(spec_path, 'w') { |file| file.write AOC.spec_temp(day) }
+end
+
+task :test, [:day] do |task, args|
+  args.with_defaults :day => AOC.last_day
+
+  day = args[:day].to_i
+  test day
+end
+
+task :test_all do |task|
+  AOC.days.each { |day| test day }
+end
+
+task :solve, [:day] do |task, args|
+  args.with_defaults :day => most_recent_day
+
+  day = args[:day].to_i
+  solve day
+end
+
+task :solve_all do |task|
+  AOC.days.each { |day| solve day }
+end
+
+task :all do |task|
+  AOC.days.each do |day|
+    test day
+    solve day
+  end
+end
+
+task :defaul => :all
