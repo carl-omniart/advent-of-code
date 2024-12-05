@@ -1,4 +1,4 @@
-require FileName
+require_relative '../lib/FileName'
 
 RSpec.describe ModuleName do
   let(:test_input) do

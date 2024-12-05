@@ -1,117 +1,133 @@
 module AOC
-  ROOT = Dir.getwd
+  class << self
+    def year
+      File.basename(Dir.getwd).to_i
+    end
 
-  def self.year
-    File.basename(ROOT).to_i
-  end    
-   
-
-  DIRS = {
-    data: "#{ROOT}/data",
-    lib: "#{ROOT}/lib",
-    spec: "#{ROOT}/spec"
-  }
-
-  def self.to_file day, subdir
-    file = "day_%02d.rb" % day
-    dir  = DIRS[subdir]
-    "#{dir}/#{file}"
-  end
-
-  def self.to_day file
-    File.basename(file).gsub('day_', '').to_i
-  end
-
-  def self.mod_name day
-    ("Day%02d" % day).to_sym
-  end
-
-  def self.mod day
-    mod = Object.const_get mod_name(day)
-    yield mod if block_given?
-    mod
-  end
-
-  def self.files subdir
-    dir = DIRS[subdir]
-    Dir.each_child(dir).select { |child| File.file? child }
-  end    
+    def days
+      Dir.each_child("./lib")
+         .select { |child| File.file? child }
+         .map { |file| to_day file }
+         .sort
+    end
   
-  def self.days
-    files(:lib).map { |file| to_day file }.sort
-  end  
+    def last_day
+      days.max || 0
+    end  
+  
+    def next_day
+      last_day + 1
+    end
 
-  def self.last_day
-    days.max || 0
-  end  
+    def data_path day
+      filename = to_var day
+      "./data/#{filename}.txt"
+    end
 
-  def self.next_day
-    last_day + 1
-  end
+    def lib_path day
+      filename = to_var day
+      "./lib/#{filename}.rb"
+    end
 
-  def self.lib_temp day
-    File.read("#{ROOT}/temp/lib.rb").gsub('ModuleName', module_name(day))
-  end
+    def spec_path day
+      filename = to_var day
+      "./spec/#{filename}_spec.rb"
+    end
 
-  def self.spec_temp day
+    def lib_temp day
+      File.read("./temp/lib.rb")
+          .gsub('ModuleName', to_const(day))
+    end
+
+    def spec_temp day
+      File.read("./temp/spec.rb")
+          .gsub('FileName', to_var(day))
+          .gsub('ModuleName', to_const(day))
+    end
+    
+    def data day
+      File.read data_path(day)
+    end
+
+    def mod day
+      const = to_const day
+      Object.const_get(const).tap { |mod| yield mod if block_given? }
+    end
+
+    def create_new_day
+      next_day.tap do |day|
+        File.open(lib_path(day), 'w') { |f| f.write lib_temp(day) }
+        File.open(spec_path(day), 'w') { |f| f.write spec_temp(day) }
+      end
+    end
+
+    def test day
+      load spec_path(day)
+    end
+
+    def solve day
+      load lib_path(day)
+      
+      mod  = mod day
+      data = data day
+      
+      puts "Day #{mod.day}: #{mod.title}"
+      puts "  1. #{mod.solve_part_one(data)}"
+      puts "  2. #{mod.solve_part_two(data)}"
+    end
+
+    def test_all
+      days.each { |day| test day }
+    end
+
+    def solve_all
+      days.each { |day| solve day }
+    end
+
+    def test_and_solve_all
+      days.each do |day| 
+        test day
+        solve day
+      end
+    end
+    
+    private
+
+    def to_const day
+      "Day%02d" % day
+    end
+
+    def to_var day
+      "day_%02d" % day
+    end
+
+    def to_day path
+      filename = File.basename path
+      raise ArgumentError, "Invalid Path: ${path}" unless filename =~ /day_\d\d/
+
+      filename.gsub('day_', '').to_i
+    end
   end
 end
 
-def test day
-  spec_file = AOC.to_file day, :spec
-  require spec_file
-end
-
-def solve day
-  main_file = AOC.to_file day, :lib
-  data_file = AOC.to_file day, :data
-
-  require main_file
-  input = File.read data_file
-
-  AOC.mod(day) do |mod|
-    puts "Day #{mod.day}: #{mod.title}"
-    puts "  1. #{mod.solve_part_one(input)}"
-    puts "  2. #{mod.solve_part_two(input)}"
-  end
-end
-
-task :new do |task|
-  day       = AOC.next_day
-  lib_path  = AOC.to_file day, :lib
-  spec_path = AOC.to_file day, :spec
-
-  File.open( lib_path, 'w') { |file| file.write AOC.lib_temp(day) }
-  File.open(spec_path, 'w') { |file| file.write AOC.spec_temp(day) }
-end
+task(:new) { |task| AOC.create_new_day }
 
 task :test, [:day] do |task, args|
   args.with_defaults :day => AOC.last_day
-
   day = args[:day].to_i
-  test day
-end
 
-task :test_all do |task|
-  AOC.days.each { |day| test day }
+  AOC.test day
 end
 
 task :solve, [:day] do |task, args|
   args.with_defaults :day => most_recent_day
-
   day = args[:day].to_i
-  solve day
+
+  AOC.solve day
 end
 
-task :solve_all do |task|
-  AOC.days.each { |day| solve day }
-end
-
-task :all do |task|
-  AOC.days.each do |day|
-    test day
-    solve day
-  end
-end
+task(:test_all) { |task| AOC.test_all }
+task(:solve_all) { |task| AOC.solve_all }
+task(:all) { |task| AOC.test_and_solve_all }
 
 task :defaul => :all
