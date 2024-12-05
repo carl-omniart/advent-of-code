@@ -1,3 +1,4 @@
+require_relative 'spec_helper'
 require_relative '../lib/FileName'
 
 RSpec.describe ModuleName do
@@ -10,12 +11,12 @@ RSpec.describe ModuleName do
   xit 'can solve part one' do
     expected = nil
     actual   = ModuleName.solve_part_one test_input
-    expect(expected).to eq actual
+    expect(actual).to eq expected
   end
 
   xit 'can solve part two' do
     expected = nil
     actual   = ModuleName.solve_part_two test_input
-    expect(expected).to eq actual
+    expect(actual).to eq expected
   end
 end

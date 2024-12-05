@@ -1,8 +1,8 @@
 module ModuleName
+  @title = '___'
+
   class << self
-    def title
-      '___'
-    end
+    attr_reader :title
 
     def day
       name.gsub('Day', '').to_i
