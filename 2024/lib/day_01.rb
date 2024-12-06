@@ -8,12 +8,12 @@ module Day01
       name.gsub('Day', '').to_i
     end
 
-    def solve_part_one input
+    def solve_part_one(input)
       left, right = List.parse input
       left.total_distance_from right
     end
 
-    def solve_part_two input
+    def solve_part_two(input)
       left, right = List.parse input
       left.similarity_score right
     end
@@ -21,14 +21,14 @@ module Day01
 
   class List
     class << self
-      def parse string
-        lines   = string.split("\n").map { |str| str.scan(/\d+/).map &:to_i }
+      def parse(string)
+        lines   = string.split("\n").map { |str| str.scan(/\d+/).map(&:to_i) }
         columns = lines.transpose
-        columns.map { |column| self.new(*column) }
+        columns.map { |column| new(*column) }
       end
     end
 
-    def initialize *location_ids
+    def initialize(*location_ids)
       @location_ids = location_ids
     end
 
@@ -38,11 +38,11 @@ module Day01
       location_ids.sort
     end
 
-    def distances_from other
+    def distances_from(other)
       sort.zip(other.sort).map { |a, b| (a - b).abs }
     end
 
-    def total_distance_from other
+    def total_distance_from(other)
       distances_from(other).sum
     end
 
@@ -50,7 +50,7 @@ module Day01
       location_ids.tally
     end
 
-    def similarity_score other
+    def similarity_score(other)
       tally = other.tally
       location_ids.map { |id| id * (tally[id] || 0) }.sum
     end
